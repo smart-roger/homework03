@@ -98,6 +98,8 @@ namespace customContainer{
 			auto res = new list_node<T>;
 			res->_val = ptr;
 			res->_next = nullptr;
+			
+			return res;
 		};
 		
 		//	уничтожаем элемент списка
