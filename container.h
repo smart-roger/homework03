@@ -21,7 +21,7 @@ namespace customContainer{
 		{//	iterator_traits
 		  using _Self = onewaylist_const_iterator<T>;
 		
-		  using difference_type = ptrdiff_t;
+		  //using difference_type = ptrdiff_t;
 		  using iterator_category = std::forward_iterator_tag;
 		  using value_type = T;
 		  using pointer = const T*;
