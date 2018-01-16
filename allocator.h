@@ -36,7 +36,7 @@ class customAllocator{
 		}
 		
 		T* allocate(std::size_t n){
-			//std::cout << "allocate " << n <<std::endl; 
+			//std::cout << "allocate " << n << "*"<<sizeof(T) <<std::endl; 
 			T* res(nullptr);
 			
 			//	Вычислим адрес 

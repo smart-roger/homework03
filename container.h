@@ -10,9 +10,9 @@ namespace customContainer{
 	template <typename T>
 	struct list_node{
 		list_node*	_next;
-		T*	_val;
+		T	_val;
 		
-		list_node(){_next=nullptr; _val = nullptr;};
+		list_node(){_next=nullptr; _val = T();};
 	};
 
 	//	Константный итератор для обхода списка
@@ -30,7 +30,7 @@ namespace customContainer{
 		  list_node<T>*	_data;
 		  //	Конструктор по умолчанию
 		  onewaylist_const_iterator():_data(nullptr){ 
-			std::cout << "default ctor iterator" <<std::endl;
+			
 		  };
 		  //	Конструктор с параметром. Для создания внутри контейнера
 		  explicit onewaylist_const_iterator(list_node<T>* ptrNode):_data(ptrNode){};
@@ -38,19 +38,15 @@ namespace customContainer{
 		  public:
 		  //	Получение ссылки на хранимый элемент
 		  reference operator*() const   { 
-			return *(_data->_val); 
+			return _data->_val; 
 		}
 		  //	Получение указателя на хранимый элемент
-		  pointer operator->() const  { return _data->_val; }
+		  pointer operator->() const  { return &(_data->_val); }
 
 		  //Переход к следующему элементу контейнера
 		  _Self& operator++()  {
 			if(nullptr==_data)	return *this;
 			
-			if(nullptr==_data->_next){
-				_data->_val = nullptr;
-				_data->_next= nullptr;
-			}
 			else _data = _data->_next;
 				
 			return *this;
@@ -58,11 +54,11 @@ namespace customContainer{
 	
 			//Сравнение итераторов для прохода по циклу
 		bool operator==(const _Self& rhs) const {			
-			return ((_data->_next == rhs._data->_next) && (_data->_val == rhs._data->_val));
+			return _data == rhs._data;
 		}
 			
 		  bool operator!=(const _Self& rhs) const 
-		  { return (!(*this==rhs));
+		  { return _data!=rhs._data;
 		  }
 		};
 
@@ -76,6 +72,9 @@ namespace customContainer{
 		//	Элемент списка		
 		using ptrNode = list_node<T>*;
 		
+		//	Аллокатор для узлов списка
+		typedef  typename Allocator::template rebind<list_node <T> >::other node_allocator;
+		
 		//Указатель на первый элемент списка
 		ptrNode	_first;
 		//	Указатель на последний элемент списка
@@ -85,21 +84,21 @@ namespace customContainer{
 		list_node<T> node_end;
 		
 		//	Аллокатор для размещения элементов
-		Allocator 	_allocator;
+		node_allocator 	_allocator;
 		
 		//	Выделяем память и размещаем элемент в контейнере
 		ptrNode	_createNode(const T& new_val){
-			//	Выделение памяти
+			//	Выделение памяти для узла списка
 			auto ptr = _allocator.allocate(1);
-			//	Конструирование элемента
-			_allocator.construct(ptr, new_val);
+			//std::cout << "allocate in: " << ptr << std::endl;
+			//	Конструирование узла списка
+			_allocator.construct(ptr);
 			
 			//	Задаём значения элементу списка
-			auto res = new list_node<T>;
-			res->_val = ptr;
-			res->_next = nullptr;
-			
-			return res;
+			ptr->_val = new_val;
+			ptr->_next = nullptr;
+			//std::cout << "next: " << ptr->_next << std::endl;
+			return ptr;
 		};
 		
 		//	уничтожаем элемент списка
@@ -107,15 +106,23 @@ namespace customContainer{
 		
 		public:
 		oneWayList():_first(nullptr), _last(nullptr), _allocator(){
-			
+			//std::cout << "sizeof list_node: " << sizeof(list_node<T>) << std::endl;
+			//std::cout << "sizeof T: " << sizeof(T) << std::endl;
 		};
 		
 		//	Почистить всю выделенную память
 		~oneWayList(){			
-			for (auto curr = _first; curr->_next!=nullptr; curr=curr->_next){
+			auto curr = _first; 
+			while(curr!=nullptr){
+				//std::cout << "curr: " << curr << " next: " << curr->_next << std::endl;
+				auto ptrRemove(curr);
+				curr=curr->_next;
 				//	По очереди удаляем все элементы списка
-				_allocator.destroy(curr->_val);
-				_allocator.deallocate(curr->_val,1);				
+				
+				//std::cout << "deallocate: " << ptrRemove << std::endl;
+				//std::cout << "next: " << ptrRemove->_next << std::endl;
+				_allocator.destroy(ptrRemove);
+				_allocator.deallocate(ptrRemove,1);
 			}
 		};
 		
@@ -131,7 +138,9 @@ namespace customContainer{
 			} else {
 			//	Если элементы уже есть - редактируем last	
 				_last->_next = newElement;
+				//std::cout << "prev: " << _last << " next: " << _last->_next << " _last: " << newElement << std::endl;
 				_last = newElement;
+				_last->_next=nullptr;
 			}
 		};
 		
@@ -139,7 +148,7 @@ namespace customContainer{
 			return onewaylist_const_iterator<T>(_first);
 		}
 		onewaylist_const_iterator<T> cend() noexcept{
-			return onewaylist_const_iterator<T> (&node_end);
+			return onewaylist_const_iterator<T> ();
 		}
 	};
 }
